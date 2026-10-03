@@ -1,0 +1,525 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Transfer value check</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Hanken+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EFF1F7; --surface:#FFFFFF; --ink:#12142B; --muted:#585E7A; --line:#D8DBE8;
+  --up:#007A69; --down:#C2185B; --neutral:#8087A3; --accent:#4B2BB5;
+  --display:"Bricolage Grotesque","Hanken Grotesk",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --body:"Hanken Grotesk",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  color-scheme:light dark;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E1020; --surface:#171A31; --ink:#ECEEF9; --muted:#A0A6C2; --line:#2A2E4D;
+    --up:#3DD6BC; --down:#FF6E9F; --neutral:#7C83A3; --accent:#A994FF;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0E1020; --surface:#171A31; --ink:#ECEEF9; --muted:#A0A6C2; --line:#2A2E4D;
+  --up:#3DD6BC; --down:#FF6E9F; --neutral:#7C83A3; --accent:#A994FF;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px);height:100%}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font:400 16px/1.5 var(--body);-webkit-font-smoothing:antialiased}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{max-width:1120px;margin:0 auto;padding:0 max(20px,env(safe-area-inset-left)) 64px max(20px,env(safe-area-inset-right))}
+
+/* top bar */
+.top{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:20px 0 8px}
+.brand{font:700 1.05rem/1 var(--display);letter-spacing:-.01em;margin:0}
+.brandrow{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.badge{font-size:.8rem;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:3px 10px;background:var(--surface)}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;height:40px;padding:0 16px;border-radius:10px;border:1px solid var(--ink);background:var(--ink);color:var(--bg);font:600 .9rem var(--body);cursor:pointer}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.btn:hover{filter:brightness(1.12)}
+.btn.ghost:hover{border-color:var(--ink);filter:none}
+.btn:focus-within{outline:2px solid var(--accent);outline-offset:2px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+#msg{margin:8px 0 0;color:var(--down);font-size:.92rem}
+#msg:empty{display:none}
+
+/* hero */
+.hero{padding:40px 0 20px}
+h1{font:700 clamp(1.8rem,1.1rem + 3.2vw,3.1rem)/1.06 var(--display);letter-spacing:-.025em;margin:0 0 14px;max-width:26ch}
+h1 .u{color:var(--up)} h1 .d{color:var(--down)}
+.sub{margin:0;color:var(--muted);max-width:62ch;font-size:1.02rem}
+
+h2{font:600 1.2rem/1.2 var(--display);letter-spacing:-.01em;margin:0}
+.sechead{display:flex;justify-content:space-between;align-items:flex-end;gap:12px 24px;flex-wrap:wrap;margin:28px 0 8px}
+.legend{display:flex;gap:6px 18px;flex-wrap:wrap;font-size:.85rem;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:7px}
+.lg-ring{width:12px;height:12px;border-radius:50%;border:2px solid var(--muted);display:inline-block}
+.lg-dot{width:12px;height:12px;border-radius:50%;background:var(--neutral);display:inline-block}
+.lg-line{width:16px;height:4px;border-radius:2px;display:inline-block}
+#dumbbell{width:100%;min-height:200px}
+
+/* svg */
+svg{display:block;max-width:100%}
+svg text{font-family:var(--body)}
+.grid{stroke:var(--line);stroke-width:1}
+.tick{fill:var(--muted);font-size:12px}
+.nm{fill:var(--ink);font-size:13.5px;font-weight:500}
+.gp{font-size:13px;font-weight:600}
+.hit{fill:transparent;cursor:pointer}
+.rowsel{fill:color-mix(in srgb,var(--accent) 12%,transparent)}
+.ring{fill:var(--bg);stroke:var(--muted);stroke-width:2}
+.axis{fill:var(--muted);font-size:12px}
+.zone{fill:var(--muted);font-size:12px;font-style:italic}
+.diag{stroke:var(--neutral);stroke-width:1.5;stroke-dasharray:5 5}
+.pt{cursor:pointer;opacity:.82}
+.pt:hover{opacity:1}
+.pt.on{opacity:1;stroke:var(--ink);stroke-width:2.5}
+
+/* panels */
+.grid2{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:20px;margin-top:36px}
+@media (max-width:860px){.grid2{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px;min-width:0}
+.hint{color:var(--muted);font-size:.9rem;margin:6px 0 10px}
+#detail h2{font-size:1.6rem;letter-spacing:-.02em}
+.meta{color:var(--muted);margin:4px 0 16px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:14px 16px;margin:0 0 20px}
+.stats div{border-left:2px solid var(--line);padding-left:10px}
+.stats dt{color:var(--muted);font-size:.82rem}
+.stats dd{margin:0;font:600 1.5rem/1.2 var(--display);font-variant-numeric:tabular-nums}
+.bar{display:grid;grid-template-columns:92px 1fr auto;gap:10px;align-items:center;margin:8px 0;font-size:.9rem}
+.bar .track{height:12px;border-radius:6px;background:color-mix(in srgb,var(--line) 70%,transparent);overflow:hidden}
+.bar .fill{display:block;height:100%;border-radius:6px;transition:width .35s ease}
+.bar b{font-variant-numeric:tabular-nums;font-weight:600}
+.verdict{margin:16px 0 0;padding-top:14px;border-top:1px solid var(--line);font-size:.98rem}
+.verdict strong{font-weight:600}
+.vup{color:var(--up)} .vdown{color:var(--down)} .vfair{color:var(--muted)}
+
+/* table */
+.tablehead{margin-top:36px}
+.controls{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0 14px}
+.controls input,.controls select{height:40px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:10px;padding:0 12px;font:400 .95rem var(--body)}
+.controls input{flex:1 1 220px;min-width:0}
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:16px;background:var(--surface)}
+table{width:100%;border-collapse:collapse;min-width:720px}
+th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--line);vertical-align:middle}
+tbody tr:last-child td{border-bottom:0}
+th{font-weight:500;color:var(--muted);font-size:.86rem;white-space:nowrap;padding:6px 8px}
+th .sort{all:unset;cursor:pointer;display:inline-flex;gap:4px;align-items:center;padding:6px;border-radius:6px}
+th .sort:focus-visible{outline:2px solid var(--accent)}
+th[aria-sort="ascending"] .sort::after{content:"\2191"}
+th[aria-sort="descending"] .sort::after{content:"\2193"}
+th[aria-sort] .sort{color:var(--ink)}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+th.n .sort{justify-content:flex-end}
+tbody tr{cursor:pointer}
+tbody tr:hover{background:color-mix(in srgb,var(--accent) 6%,transparent)}
+tbody tr.sel{background:color-mix(in srgb,var(--accent) 13%,transparent)}
+.plbtn{all:unset;cursor:pointer;font-weight:600;display:block}
+.plbtn:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+.sub2{display:block;color:var(--muted);font-size:.84rem}
+.gapcell{display:flex;align-items:center;gap:10px;justify-content:flex-end}
+.gtrack{position:relative;width:84px;height:8px;border-radius:4px;background:color-mix(in srgb,var(--line) 70%,transparent);flex:none}
+.gtrack::before{content:"";position:absolute;left:50%;top:-2px;bottom:-2px;width:1px;background:var(--neutral)}
+.gfill{position:absolute;top:0;bottom:0;border-radius:4px}
+.gfill.up{left:50%;background:var(--up)} .gfill.down{right:50%;background:var(--down)} .gfill.fair{left:50%;background:var(--neutral)}
+.gnum{min-width:64px;text-align:right;font-weight:600;font-variant-numeric:tabular-nums;font-size:.92rem}
+.foot{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:12px;color:var(--muted);font-size:.9rem}
+.empty{padding:36px 16px;text-align:center;color:var(--muted)}
+details{margin-top:28px;color:var(--muted);font-size:.92rem}
+summary{cursor:pointer;color:var(--ink);font-weight:500}
+details p{max-width:70ch}
+body.dragging::after{content:"Drop your CSV file to load it";position:fixed;inset:12px;border:2px dashed var(--accent);border-radius:20px;background:color-mix(in srgb,var(--bg) 88%,transparent);display:grid;place-items:center;font:600 1.3rem var(--display);z-index:10}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brandrow">
+      <p class="brand">Transfer value check</p>
+      <span class="badge" id="badge">Sample data</span>
+    </div>
+    <div class="actions">
+      <label class="btn"><input class="sr" type="file" id="file" accept=".csv,text/csv">Load your CSV</label>
+      <button class="btn ghost" id="useSample" type="button" hidden>Use sample data</button>
+    </div>
+  </header>
+  <p id="msg" role="status"></p>
+
+  <section class="hero">
+    <h1 id="headline">Loading players</h1>
+    <p class="sub" id="subline"></p>
+  </section>
+
+  <section aria-labelledby="gapsTitle">
+    <div class="sechead">
+      <h2 id="gapsTitle">Where the model and the market disagree most</h2>
+      <div class="legend">
+        <span><i class="lg-ring"></i>Listed value</span>
+        <span><i class="lg-dot"></i>Model value</span>
+        <span><i class="lg-line" style="background:var(--up)"></i>Worth more than listed</span>
+        <span><i class="lg-line" style="background:var(--down)"></i>Worth less than listed</span>
+      </div>
+    </div>
+    <div id="dumbbell"></div>
+  </section>
+
+  <div class="grid2">
+    <section class="panel" aria-labelledby="scTitle">
+      <h2 id="scTitle">Listed value vs model value</h2>
+      <p class="hint">Each dot is a player. Dots above the dashed line are worth more than listed. Both axes use a log scale.</p>
+      <div id="scatter"></div>
+    </section>
+    <section class="panel" id="detail" aria-live="polite"></section>
+  </div>
+
+  <section class="tablehead" aria-labelledby="tbTitle">
+    <h2 id="tbTitle">All players</h2>
+    <div class="controls">
+      <input id="q" type="search" placeholder="Search by player or club" aria-label="Search by player or club">
+      <select id="pos" aria-label="Filter by position"><option value="all">All positions</option></select>
+      <select id="ver" aria-label="Filter by verdict">
+        <option value="all">All verdicts</option>
+        <option value="up">Worth more than listed</option>
+        <option value="down">Worth less than listed</option>
+        <option value="fair">In line with listed</option>
+      </select>
+    </div>
+    <div class="tablewrap">
+      <table>
+        <thead><tr>
+          <th scope="col" data-k="name"><button class="sort" type="button">Player</button></th>
+          <th scope="col" class="n" data-k="age"><button class="sort" type="button">Age</button></th>
+          <th scope="col" class="n" data-k="goals"><button class="sort" type="button">Goals</button></th>
+          <th scope="col" class="n" data-k="assists"><button class="sort" type="button">Assists</button></th>
+          <th scope="col" class="n" data-k="actual"><button class="sort" type="button">Listed value</button></th>
+          <th scope="col" class="n" data-k="pred"><button class="sort" type="button">Model value</button></th>
+          <th scope="col" class="n" data-k="gap"><button class="sort" type="button">Gap</button></th>
+        </tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <div class="foot"><span id="count"></span><button class="btn ghost" id="more" type="button" hidden>Show 25 more</button></div>
+  </section>
+
+  <details>
+    <summary>Which columns does my CSV need?</summary>
+    <p>Required: <b>name</b>, the listed market value (<b>market_value_eur</b> or <b>actual</b>), and the model's estimate (<b>predicted_value_eur</b> or <b>predicted</b>). Optional: <b>club</b>, <b>position</b>, <b>age</b>, <b>goals</b>, <b>assists</b>, <b>minutes</b>. Values can be in euros (45000000) or in millions (45). Column names are not case sensitive.</p>
+  </details>
+</div>
+
+<script>
+(function(){
+  var $ = function(s){ return document.querySelector(s); };
+  var esc = function(s){ return String(s).replace(/[&<>"']/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); };
+  var POS = {FW:'Forward',MF:'Midfielder',DF:'Defender',GK:'Goalkeeper'};
+  var COL = {up:'var(--up)',down:'var(--down)',fair:'var(--neutral)'};
+  var state = {all:[],sample:true,q:'',pos:'all',verdict:'all',sort:'gap',dir:-1,sel:null,limit:25,skipped:0};
+  var lastW = {d:0,s:0};
+
+  /* ---------- formatting ---------- */
+  function fmt(v){ var m = v/1e6; return '\u20AC' + (Math.round(m*10)/10) + 'm'; }
+  function fmtGap(v){ return (v>=0?'+':'\u2212') + fmt(Math.abs(v)); }
+  function num(x){ return x==null ? '\u2013' : x; }
+  function median(a){ var s=a.slice().sort(function(x,y){return x-y;}); var h=s.length>>1; return s.length%2 ? s[h] : (s[h-1]+s[h])/2; }
+
+  /* ---------- sample data (invented, seeded) ---------- */
+  function rng(seed){ return function(){ seed|=0; seed=seed+0x6D2B79F5|0; var t=Math.imul(seed^seed>>>15,1|seed); t=t+Math.imul(t^t>>>7,61|t)^t; return((t^t>>>14)>>>0)/4294967296; }; }
+  function makeSample(){
+    var r = rng(11);
+    var F=['Marcus','Tomas','Ibrahim','Lucas','Noah','Rafael','Elias','Callum','Jonas','Mateo','Kieran','Andre','Felix','Samir','Owen','Dario','Theo','Yusuf','Hugo','Declan'];
+    var L=['Hale','Ibarra','Okafor','Lindqvist','Moreau','Brandt','Castillo','Whitfield','Nakamura','Duarte','Fenwick','Adeyemi','Kovac','Rossi','Tanaka','Mbaye','Sorensen','Pereira','Gallagher','Haddad'];
+    var C=['Arsenal','Chelsea','Liverpool','Man City','Man Utd','Spurs','Newcastle','Aston Villa','Brighton','West Ham','Everton','Fulham','Brentford','Crystal Palace','Wolves','Bournemouth'];
+    var P=['FW','FW','FW','MF','MF','MF','DF','DF','GK'];
+    var gS={FW:0.0075,MF:0.0028,DF:0.0009,GK:0}, aS={FW:0.0035,MF:0.0038,DF:0.0016,GK:0.0002};
+    var out=[];
+    for(var i=0;i<44;i++){
+      var pos=P[Math.floor(r()*P.length)];
+      var age=Math.round(19+r()*16), mins=Math.round(900+r()*2300);
+      var goals=Math.round(mins*gS[pos]*(0.4+r()*1.3)), assists=Math.round(mins*aS[pos]*(0.4+r()*1.3));
+      var af=Math.max(0.3,1.35-Math.abs(age-24.5)*0.06);
+      var base=(5+goals*3.4+assists*2.4+mins/2200*10)*af*(pos==='GK'?0.6:1);
+      var actual=Math.max(1.5,base*Math.exp((r()-0.5)*0.95));
+      var pred=Math.max(1.5,base*Math.exp((r()-0.5)*0.34));
+      out.push({name:F[i%20]+' '+L[(i*7+3+(i>=20?5:0)+(i>=40?2:0))%20],club:C[Math.floor(r()*C.length)],pos:pos,age:age,goals:goals,assists:assists,minutes:mins,actual:actual*1e6,pred:pred*1e6});
+    }
+    return out;
+  }
+
+  function finalize(list){
+    return list.map(function(p,i){
+      var gap=p.pred-p.actual, pct=gap/p.actual;
+      var o={}; for(var k in p) o[k]=p[k];
+      o.id=i; o.gap=gap; o.pct=pct; o.v = pct>0.15?'up':(pct<-0.15?'down':'fair');
+      return o;
+    });
+  }
+
+  /* ---------- CSV ---------- */
+  function parseCSV(text){
+    text=text.replace(/^\uFEFF/,'');
+    var rows=[],row=[],f='',q=false;
+    for(var i=0;i<text.length;i++){
+      var c=text[i];
+      if(q){ if(c==='"'){ if(text[i+1]==='"'){f+='"';i++;} else q=false; } else f+=c; }
+      else if(c==='"') q=true;
+      else if(c===','){ row.push(f); f=''; }
+      else if(c==='\n'){ row.push(f); rows.push(row); row=[]; f=''; }
+      else if(c!=='\r') f+=c;
+    }
+    if(f!==''||row.length){ row.push(f); rows.push(row); }
+    return rows.filter(function(r){ return r.some(function(x){ return x.trim()!==''; }); });
+  }
+  var ALIAS={
+    name:['name','player','playername'],
+    club:['club','team','clubname','currentclubname'],
+    pos:['position','pos'],
+    age:['age'],
+    goals:['goals'],
+    assists:['assists'],
+    minutes:['minutes','minutesplayed','mins'],
+    actual:['marketvalueeur','marketvalue','actual','actualvalue','actualvalueeur','listedvalue','value'],
+    pred:['predictedvalueeur','predictedvalue','predicted','predictedmarketvalue','predictedmarketvalueeur','prediction','modelvalue','pred']
+  };
+  function norm(h){ return h.toLowerCase().replace(/[^a-z0-9]/g,''); }
+  function toNum(x){
+    if(x==null) return NaN; var s=String(x).toLowerCase(); var n=parseFloat(s.replace(/[^0-9.\-]/g,''));
+    if(isNaN(n)) return NaN; if(/\dm/.test(s)||/m$/.test(s.trim())) n*=1e6; else if(/\dk/.test(s)||/k$/.test(s.trim())) n*=1e3; return n;
+  }
+  function posCode(s){
+    if(!s) return null; var t=String(s).toLowerCase();
+    if(t.indexOf('keep')>-1||t==='gk') return 'GK';
+    if(t.indexOf('def')>-1||t.indexOf('back')>-1||t==='df') return 'DF';
+    if(t.indexOf('mid')>-1||t==='mf') return 'MF';
+    if(t.indexOf('att')>-1||t.indexOf('for')>-1||t.indexOf('wing')>-1||t.indexOf('strik')>-1||t==='fw') return 'FW';
+    return String(s).trim();
+  }
+  function fromCSV(text){
+    var rows=parseCSV(text);
+    if(rows.length<2) throw new Error('That file looks empty. Add a header row and at least one player.');
+    var heads=rows[0].map(norm), idx={};
+    Object.keys(ALIAS).forEach(function(k){
+      for(var i=0;i<ALIAS[k].length;i++){ var j=heads.indexOf(ALIAS[k][i]); if(j>-1){ idx[k]=j; break; } }
+    });
+    var missing=[];
+    if(idx.name==null) missing.push('name');
+    if(idx.actual==null) missing.push('market_value_eur');
+    if(idx.pred==null) missing.push('predicted_value_eur');
+    if(missing.length) throw new Error('Could not find these columns: ' + missing.join(', ') + '. Rename the columns in your CSV and load it again.');
+    var list=[], skipped=0;
+    rows.slice(1).forEach(function(r){
+      var a=toNum(r[idx.actual]), p=toNum(r[idx.pred]), name=(r[idx.name]||'').trim();
+      if(!name||!(a>0)||!(p>0)){ skipped++; return; }
+      function opt(k){ if(idx[k]==null) return null; var n=toNum(r[idx[k]]); return isNaN(n)?null:n; }
+      list.push({name:name,club:idx.club!=null?(r[idx.club]||'').trim():'',pos:idx.pos!=null?posCode(r[idx.pos]):null,age:opt('age'),goals:opt('goals'),assists:opt('assists'),minutes:opt('minutes'),actual:a,pred:p});
+    });
+    if(!list.length) throw new Error('No usable rows. Each player needs a name, a listed value and a predicted value above zero.');
+    var mx=Math.max.apply(null,list.map(function(p){ return Math.max(p.actual,p.pred); }));
+    if(mx<1000) list.forEach(function(p){ p.actual*=1e6; p.pred*=1e6; });
+    return {list:list,skipped:skipped};
+  }
+
+  /* ---------- load ---------- */
+  function setData(list,isSample,label,skipped){
+    state.all=finalize(list); state.sample=isSample; state.skipped=skipped||0;
+    state.q=''; state.pos='all'; state.verdict='all'; state.limit=25; state.sort='gap'; state.dir=-1;
+    $('#q').value=''; $('#ver').value='all';
+    var big=state.all.slice().sort(function(a,b){ return Math.abs(b.gap)-Math.abs(a.gap); })[0];
+    state.sel=big.id;
+    $('#badge').textContent=label; $('#useSample').hidden=isSample;
+    renderAll();
+  }
+  function handleFile(file){
+    if(!file) return;
+    var rd=new FileReader();
+    rd.onload=function(){
+      try{ var res=fromCSV(String(rd.result)); $('#msg').textContent=''; setData(res.list,false,file.name,res.skipped); }
+      catch(e){ $('#msg').textContent=e.message; }
+    };
+    rd.onerror=function(){ $('#msg').textContent='The file could not be read. Try saving it as CSV again.'; };
+    rd.readAsText(file);
+  }
+
+  /* ---------- hero ---------- */
+  function drawHero(){
+    var a=state.all, n=a.length;
+    var up=a.filter(function(p){return p.v==='up';}).length, down=a.filter(function(p){return p.v==='down';}).length;
+    $('#headline').innerHTML='<span class="u">'+up+'</span> of '+n+' players are worth more than their listed value, <span class="d">'+down+'</span> are worth less.';
+    var err=Math.round(median(a.map(function(p){return Math.abs(p.pct);}))*100);
+    var s='The model typically lands within '+err+'% of the listed value. A gap under 15% counts as in line. Select any player to see the detail.';
+    if(state.skipped) s+=' '+state.skipped+' row'+(state.skipped>1?'s were':' was')+' skipped because of missing values.';
+    $('#subline').textContent=s;
+  }
+
+  /* ---------- dumbbell ---------- */
+  function niceStep(max){ var steps=[1,2,5,10,20,25,50,100,200,500]; for(var i=0;i<steps.length;i++){ if(steps[i]>=max/5) return steps[i]; } return 1000; }
+  function drawDumbbell(){
+    var el=$('#dumbbell'), w=Math.max(300,Math.floor(el.clientWidth)); lastW.d=w;
+    var small=w<560, L=small?104:180, R=small?74:96, rowH=small?38:40, top=8, bottom=34;
+    var rows=state.all.slice().sort(function(a,b){return Math.abs(b.gap)-Math.abs(a.gap);}).slice(0,10).sort(function(a,b){return b.gap-a.gap;});
+    var maxV=Math.max.apply(null,rows.map(function(p){return Math.max(p.actual,p.pred);}))/1e6*1.06;
+    var step=niceStep(maxV), maxT=Math.ceil(maxV/step)*step;
+    var pw=w-L-R, X=function(v){ return L+(v/1e6/maxT)*pw; };
+    var H=top+rows.length*rowH+bottom;
+    var s='<svg width="'+w+'" height="'+H+'" viewBox="0 0 '+w+' '+H+'" role="img" aria-label="Chart of the ten players with the largest gap between listed value and model value">';
+    for(var t=0;t<=maxT;t+=step){
+      var tx=L+(t/maxT)*pw;
+      s+='<line class="grid" x1="'+tx+'" x2="'+tx+'" y1="'+top+'" y2="'+(H-bottom)+'"/><text class="tick" x="'+tx+'" y="'+(H-10)+'" text-anchor="middle">\u20AC'+t+'m</text>';
+    }
+    var maxc=small?13:22;
+    rows.forEach(function(p,i){
+      var y0=top+i*rowH, cy=y0+rowH/2, col=COL[p.v];
+      var nm=p.name.length>maxc?p.name.slice(0,maxc-1)+'\u2026':p.name;
+      if(p.id===state.sel) s+='<rect class="rowsel" x="0" y="'+y0+'" width="'+w+'" height="'+rowH+'" rx="8"/>';
+      s+='<text class="nm" x="'+(L-14)+'" y="'+(cy+4.5)+'" text-anchor="end">'+esc(nm)+'</text>';
+      s+='<line x1="'+X(p.actual)+'" x2="'+X(p.pred)+'" y1="'+cy+'" y2="'+cy+'" style="stroke:'+col+'" stroke-width="4" stroke-linecap="round"/>';
+      s+='<circle class="ring" cx="'+X(p.actual)+'" cy="'+cy+'" r="6"/>';
+      s+='<circle cx="'+X(p.pred)+'" cy="'+cy+'" r="7" style="fill:'+col+'"/>';
+      s+='<text class="gp" x="'+w+'" y="'+(cy+4.5)+'" text-anchor="end" style="fill:'+col+'">'+fmtGap(p.gap)+'</text>';
+      s+='<rect class="hit" data-id="'+p.id+'" x="0" y="'+y0+'" width="'+w+'" height="'+rowH+'"><title>'+esc(p.name)+': listed '+fmt(p.actual)+', model '+fmt(p.pred)+'</title></rect>';
+    });
+    el.innerHTML=s+'</svg>';
+  }
+
+  /* ---------- scatter ---------- */
+  function drawScatter(){
+    var el=$('#scatter'), w=Math.max(260,Math.floor(el.clientWidth)); lastW.s=w;
+    var h=Math.round(Math.min(440,Math.max(300,w*0.85))), m={l:46,r:12,t:10,b:40};
+    var vals=[]; state.all.forEach(function(p){ vals.push(p.actual/1e6,p.pred/1e6); });
+    var d0=Math.min.apply(null,vals)*0.8, d1=Math.max.apply(null,vals)*1.25, l0=Math.log(d0), l1=Math.log(d1);
+    var S=function(v){ return (Math.log(v)-l0)/(l1-l0); };
+    var X=function(v){ return m.l+S(v)*(w-m.l-m.r); }, Y=function(v){ return h-m.b-S(v)*(h-m.t-m.b); };
+    var s='<svg width="'+w+'" height="'+h+'" viewBox="0 0 '+w+' '+h+'" role="img" aria-label="Scatter plot of listed value against model value for every player">';
+    [0.5,1,2,5,10,20,50,100,200,500].forEach(function(t){
+      if(t<d0||t>d1) return;
+      s+='<line class="grid" x1="'+m.l+'" x2="'+(w-m.r)+'" y1="'+Y(t)+'" y2="'+Y(t)+'"/><line class="grid" x1="'+X(t)+'" x2="'+X(t)+'" y1="'+m.t+'" y2="'+(h-m.b)+'"/>';
+      s+='<text class="tick" x="'+(m.l-8)+'" y="'+(Y(t)+4)+'" text-anchor="end">'+t+'</text><text class="tick" x="'+X(t)+'" y="'+(h-m.b+16)+'" text-anchor="middle">'+t+'</text>';
+    });
+    s+='<line class="diag" x1="'+X(d0)+'" y1="'+Y(d0)+'" x2="'+X(d1)+'" y2="'+Y(d1)+'"/>';
+    s+='<text class="zone" x="'+(m.l+8)+'" y="'+(m.t+14)+'">Worth more than listed</text>';
+    s+='<text class="zone" x="'+(w-m.r-8)+'" y="'+(h-m.b-8)+'" text-anchor="end">Worth less than listed</text>';
+    s+='<text class="axis" x="'+((m.l+w-m.r)/2)+'" y="'+(h-4)+'" text-anchor="middle">Listed value (\u20AC m)</text>';
+    s+='<text class="axis" transform="translate(12 '+((m.t+h-m.b)/2)+') rotate(-90)" text-anchor="middle">Model value (\u20AC m)</text>';
+    var order=state.all.slice().sort(function(a,b){ return (a.id===state.sel)-(b.id===state.sel); });
+    order.forEach(function(p){
+      var on=p.id===state.sel;
+      s+='<circle class="pt'+(on?' on':'')+'" data-id="'+p.id+'" tabindex="0" role="button" aria-label="'+esc(p.name)+'" cx="'+X(p.actual/1e6)+'" cy="'+Y(p.pred/1e6)+'" r="'+(on?8:5.5)+'" style="fill:'+COL[p.v]+'"><title>'+esc(p.name)+': listed '+fmt(p.actual)+', model '+fmt(p.pred)+'</title></circle>';
+    });
+    el.innerHTML=s+'</svg>';
+  }
+
+  /* ---------- detail ---------- */
+  function drawDetail(){
+    var p=state.all.filter(function(x){return x.id===state.sel;})[0]; if(!p) return;
+    var mx=Math.max(p.actual,p.pred);
+    var sub=[p.club,POS[p.pos]||p.pos].filter(Boolean).join(', ')||'No club or position in this file';
+    var stats='';
+    if(p.age!=null) stats+='<div><dt>Age</dt><dd>'+p.age+'</dd></div>';
+    if(p.goals!=null) stats+='<div><dt>Goals</dt><dd>'+p.goals+'</dd></div>';
+    if(p.assists!=null) stats+='<div><dt>Assists</dt><dd>'+p.assists+'</dd></div>';
+    if(p.minutes!=null) stats+='<div><dt>Minutes</dt><dd>'+Math.round(p.minutes).toLocaleString('en-GB')+'</dd></div>';
+    if(p.minutes>0&&p.goals!=null&&p.assists!=null) stats+='<div><dt>Goals + assists per 90</dt><dd>'+((p.goals+p.assists)/p.minutes*90).toFixed(2)+'</dd></div>';
+    var pct=Math.round(Math.abs(p.pct)*100), txt;
+    if(p.v==='up') txt='<strong class="vup">Worth more than listed.</strong> The model values this player '+fmt(Math.abs(p.gap))+' ('+pct+'%) above the listed value.';
+    else if(p.v==='down') txt='<strong class="vdown">Worth less than listed.</strong> The model values this player '+fmt(Math.abs(p.gap))+' ('+pct+'%) below the listed value.';
+    else txt='<strong class="vfair">In line with listed.</strong> The model and the listed value are within 15% of each other.';
+    $('#detail').innerHTML='<h2>'+esc(p.name)+'</h2><p class="meta">'+esc(sub)+'</p>'+
+      (stats?'<dl class="stats">'+stats+'</dl>':'')+
+      '<div class="bar"><span>Listed value</span><span class="track"><i class="fill" style="width:'+(p.actual/mx*100)+'%;background:var(--neutral)"></i></span><b>'+fmt(p.actual)+'</b></div>'+
+      '<div class="bar"><span>Model value</span><span class="track"><i class="fill" style="width:'+(p.pred/mx*100)+'%;background:'+COL[p.v]+'"></i></span><b>'+fmt(p.pred)+'</b></div>'+
+      '<p class="verdict">'+txt+'</p>';
+  }
+
+  /* ---------- table ---------- */
+  function filtered(){
+    var q=state.q.toLowerCase();
+    var r=state.all.filter(function(p){
+      return (state.pos==='all'||p.pos===state.pos)&&(state.verdict==='all'||p.v===state.verdict)&&(!q||(p.name+' '+p.club).toLowerCase().indexOf(q)>-1);
+    });
+    var k=state.sort, d=state.dir;
+    r.sort(function(a,b){
+      var x=a[k], y=b[k];
+      if(typeof x==='string') return x.localeCompare(y)*d;
+      return ((x==null?-Infinity:x)-(y==null?-Infinity:y))*d;
+    });
+    return r;
+  }
+  function buildPos(){
+    var set={}; state.all.forEach(function(p){ if(p.pos) set[p.pos]=1; });
+    var order=['GK','DF','MF','FW'], keys=Object.keys(set).sort(function(a,b){ var i=order.indexOf(a), j=order.indexOf(b); return (i<0?9:i)-(j<0?9:j); });
+    var sel=$('#pos'); sel.innerHTML='<option value="all">All positions</option>'+keys.map(function(k){ return '<option value="'+esc(k)+'">'+esc(POS[k]||k)+'</option>'; }).join('');
+    sel.value='all'; sel.disabled=!keys.length;
+  }
+  function drawTable(){
+    var rows=filtered(), shown=rows.slice(0,state.limit), tb=$('#tbody');
+    if(!shown.length){
+      tb.innerHTML='<tr><td colspan="7" class="empty">No players match these filters. Clear the search or pick a different position.</td></tr>';
+    } else {
+      tb.innerHTML=shown.map(function(p){
+        var w=Math.min(1,Math.abs(p.pct))*50;
+        var sub=[p.club,POS[p.pos]||p.pos].filter(Boolean).join(', ');
+        return '<tr data-id="'+p.id+'"'+(p.id===state.sel?' class="sel"':'')+'>'+
+          '<td><button class="plbtn" type="button">'+esc(p.name)+'</button>'+(sub?'<span class="sub2">'+esc(sub)+'</span>':'')+'</td>'+
+          '<td class="n">'+num(p.age)+'</td><td class="n">'+num(p.goals)+'</td><td class="n">'+num(p.assists)+'</td>'+
+          '<td class="n">'+fmt(p.actual)+'</td><td class="n">'+fmt(p.pred)+'</td>'+
+          '<td><div class="gapcell"><span class="gtrack"><i class="gfill '+p.v+'" style="width:'+w+'%"></i></span><span class="gnum" style="color:'+COL[p.v]+'">'+fmtGap(p.gap)+'</span></div></td></tr>';
+      }).join('');
+    }
+    $('#count').textContent='Showing '+shown.length+' of '+rows.length+' players';
+    var more=$('#more'); more.hidden=rows.length<=shown.length;
+    more.textContent='Show '+Math.min(25,rows.length-shown.length)+' more';
+    document.querySelectorAll('thead th').forEach(function(th){
+      if(th.dataset.k===state.sort) th.setAttribute('aria-sort',state.dir>0?'ascending':'descending'); else th.removeAttribute('aria-sort');
+    });
+  }
+
+  /* ---------- wiring ---------- */
+  function renderAll(){ drawHero(); drawDumbbell(); drawScatter(); drawDetail(); buildPos(); drawTable(); }
+  function select(id){
+    state.sel=id; drawDumbbell(); drawScatter(); drawDetail();
+    document.querySelectorAll('#tbody tr[data-id]').forEach(function(tr){ tr.classList.toggle('sel',+tr.dataset.id===id); });
+    $('#detail').scrollIntoView({block:'nearest',behavior:'smooth'});
+  }
+  $('#dumbbell').addEventListener('click',function(e){ var t=e.target.closest('[data-id]'); if(t) select(+t.dataset.id); });
+  $('#scatter').addEventListener('click',function(e){ var t=e.target.closest('[data-id]'); if(t) select(+t.dataset.id); });
+  $('#scatter').addEventListener('keydown',function(e){ if(e.key==='Enter'||e.key===' '){ var t=e.target.closest('[data-id]'); if(t){ e.preventDefault(); select(+t.dataset.id); } } });
+  $('#tbody').addEventListener('click',function(e){ var tr=e.target.closest('tr[data-id]'); if(tr) select(+tr.dataset.id); });
+  $('#q').addEventListener('input',function(e){ state.q=e.target.value.trim(); state.limit=25; drawTable(); });
+  $('#pos').addEventListener('change',function(e){ state.pos=e.target.value; state.limit=25; drawTable(); });
+  $('#ver').addEventListener('change',function(e){ state.verdict=e.target.value; state.limit=25; drawTable(); });
+  $('#more').addEventListener('click',function(){ state.limit+=25; drawTable(); });
+  document.querySelectorAll('thead th').forEach(function(th){
+    th.querySelector('button').addEventListener('click',function(){
+      var k=th.dataset.k; if(state.sort===k) state.dir*=-1; else { state.sort=k; state.dir=(k==='name')?1:-1; }
+      drawTable();
+    });
+  });
+  $('#file').addEventListener('change',function(e){ handleFile(e.target.files[0]); e.target.value=''; });
+  $('#useSample').addEventListener('click',function(){ $('#msg').textContent=''; setData(makeSample(),true,'Sample data',0); });
+  window.addEventListener('dragover',function(e){ e.preventDefault(); document.body.classList.add('dragging'); });
+  window.addEventListener('dragleave',function(e){ if(!e.relatedTarget) document.body.classList.remove('dragging'); });
+  window.addEventListener('drop',function(e){ e.preventDefault(); document.body.classList.remove('dragging'); if(e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]); });
+
+  var raf=0;
+  function onResize(){
+    cancelAnimationFrame(raf);
+    raf=requestAnimationFrame(function(){
+      if(!state.all.length) return;
+      if(Math.floor($('#dumbbell').clientWidth)!==lastW.d) drawDumbbell();
+      if(Math.floor($('#scatter').clientWidth)!==lastW.s) drawScatter();
+    });
+  }
+  if(window.ResizeObserver){ var ro=new ResizeObserver(onResize); ro.observe($('#dumbbell')); ro.observe($('#scatter')); }
+  else window.addEventListener('resize',onResize);
+
+  setData(makeSample(),true,'Sample data',0);
+})();
+</script>
+</body>
+</html>
